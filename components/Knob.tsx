@@ -8,9 +8,10 @@ interface KnobProps {
   label: string;
   color?: string;
   size?: 'sm' | 'md' | 'lg';
+  isDarkMode?: boolean;
 }
 
-const Knob: React.FC<KnobProps> = ({ value, min, max, onChange, label, color = 'cyan', size = 'md' }) => {
+const Knob: React.FC<KnobProps> = ({ value, min, max, onChange, label, color = 'cyan', size = 'md', isDarkMode = true }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [startVal, setStartVal] = useState(0);
@@ -62,6 +63,13 @@ const Knob: React.FC<KnobProps> = ({ value, min, max, onChange, label, color = '
   if(color === 'rose') activeColor = '#f43f5e';
   if(color === 'yellow') activeColor = '#eab308';
 
+  const ringBg = isDarkMode ? '#27272a' : '#e4e4e7';
+  const knobGradient = isDarkMode 
+    ? 'conic-gradient(from 180deg, #52525b 0%, #27272a 50%, #52525b 100%)' 
+    : 'conic-gradient(from 180deg, #f4f4f5 0%, #d4d4d8 50%, #f4f4f5 100%)';
+  const knobBorder = isDarkMode ? '1px solid #000' : '1px solid #a1a1aa';
+  const knobShadow = isDarkMode ? '0 4px 6px -1px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.1)' : '0 4px 6px -1px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.5)';
+
   return (
     <div className="flex flex-col items-center gap-2 select-none group">
       <div className="relative flex items-center justify-center">
@@ -70,7 +78,7 @@ const Knob: React.FC<KnobProps> = ({ value, min, max, onChange, label, color = '
             <circle 
                 cx={(sizePx + 16)/2} cy={(sizePx + 16)/2} r={(sizePx/2) + 4} 
                 fill="none" 
-                stroke="#27272a" 
+                stroke={ringBg} 
                 strokeWidth="3"
                 strokeDasharray={`${(sizePx/2 + 4) * 2 * Math.PI}`}
                 strokeDashoffset="0"
@@ -92,21 +100,24 @@ const Knob: React.FC<KnobProps> = ({ value, min, max, onChange, label, color = '
         {/* Knob Body */}
         <div 
             ref={knobRef}
-            className="rounded-full metal-knob relative cursor-ns-resize transition-transform active:scale-95 z-10"
+            className="rounded-full relative cursor-ns-resize transition-transform active:scale-95 z-10"
             style={{ 
                 width: sizePx, 
                 height: sizePx, 
-                transform: `rotate(${rotation}deg)` 
+                transform: `rotate(${rotation}deg)`,
+                background: knobGradient,
+                border: knobBorder,
+                boxShadow: knobShadow
             }}
             onMouseDown={handleMouseDown}
         >
             {/* Knob Marker */}
-            <div className="absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1/3 bg-white rounded-full shadow-[0_0_5px_white]" />
+            <div className={`absolute top-1 left-1/2 -translate-x-1/2 w-1 h-1/3 rounded-full ${isDarkMode ? 'bg-white shadow-[0_0_5px_white]' : 'bg-black/80'}`} />
         </div>
       </div>
       
       <div className="flex flex-col items-center">
-        <span className="font-sans text-[10px] font-bold text-neutral-500 group-hover:text-neutral-300 transition-colors uppercase tracking-widest">{label}</span>
+        <span className={`font-sans text-[10px] font-bold transition-colors uppercase tracking-widest ${isDarkMode ? 'text-neutral-500 group-hover:text-neutral-300' : 'text-neutral-400 group-hover:text-neutral-600'}`}>{label}</span>
       </div>
     </div>
   );

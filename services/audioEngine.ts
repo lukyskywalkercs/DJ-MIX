@@ -1,3 +1,4 @@
+
 export class DeckEngine {
   public audioContext: AudioContext;
   public source: AudioBufferSourceNode | null = null;
@@ -10,6 +11,10 @@ export class DeckEngine {
   public eqLow: BiquadFilterNode;
   public filterNode: BiquadFilterNode;
   public analyser: AnalyserNode;
+  
+  // FX Nodes
+  public driveNode: WaveShaperNode;
+  public subBassNode: BiquadFilterNode;
   
   // State
   private startTime: number = 0;
@@ -27,6 +32,15 @@ export class DeckEngine {
     this.eqLow = context.createBiquadFilter();
     this.filterNode = context.createBiquadFilter();
     this.analyser = context.createAnalyser();
+    
+    // Initialize FX Nodes
+    this.driveNode = context.createWaveShaper();
+    this.driveNode.curve = new Float32Array([0, 0]); // Neutral
+    
+    this.subBassNode = context.createBiquadFilter();
+    this.subBassNode.type = 'lowshelf';
+    this.subBassNode.frequency.value = 80; // Sub bass freq
+    this.subBassNode.gain.value = 0;
 
     // Configure Nodes
     this.eqHigh.type = 'highshelf';
@@ -44,8 +58,10 @@ export class DeckEngine {
 
     this.analyser.fftSize = 256;
 
-    // Route: Source -> EQ Low -> EQ Mid -> EQ High -> Filter -> Gain -> Analyser -> Destination
+    // Route: Source -> Drive -> SubBass -> EQ Low -> EQ Mid -> EQ High -> Filter -> Gain -> Analyser -> Destination
     // (Source is connected in play())
+    this.driveNode.connect(this.subBassNode);
+    this.subBassNode.connect(this.eqLow);
     this.eqLow.connect(this.eqMid);
     this.eqMid.connect(this.eqHigh);
     this.eqHigh.connect(this.filterNode);
@@ -60,6 +76,13 @@ export class DeckEngine {
     return this.buffer.duration;
   }
 
+  async loadUrl(url: string): Promise<number> {
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    this.buffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    return this.buffer.duration;
+  }
+
   play() {
     if (this.isPlaying || !this.buffer) return;
 
@@ -67,8 +90,8 @@ export class DeckEngine {
     this.source.buffer = this.buffer;
     this.source.playbackRate.value = this.playbackRate;
     
-    // Connect source to start of chain
-    this.source.connect(this.eqLow);
+    // Connect source to start of chain (Drive Node)
+    this.source.connect(this.driveNode);
 
     this.startTime = this.audioContext.currentTime - this.pauseTime;
     this.source.start(0, this.pauseTime);
@@ -137,6 +160,32 @@ export class DeckEngine {
       this.filterNode.frequency.setTargetAtTime(freq, now, 0.1);
       this.filterNode.Q.value = 1;
     }
+  }
+
+  setDrive(amount: number) {
+    // amount 0 to 10
+    if (amount <= 0.1) {
+        this.driveNode.curve = null;
+        return;
+    }
+    const k = amount * 10; // Scaling intensity
+    const n_samples = 44100;
+    const curve = new Float32Array(n_samples);
+    const deg = Math.PI / 180;
+    
+    for (let i = 0; i < n_samples; ++i ) {
+      let x = i * 2 / n_samples - 1;
+      // Sigmoid distortion
+      curve[i] = ( 3 + k ) * x * 20 * deg / ( Math.PI + k * Math.abs(x) );
+    }
+    this.driveNode.curve = curve;
+  }
+
+  setSubBass(amount: number) {
+      // amount 0 to 10
+      // Boost 80Hz low shelf
+      const gain = amount * 1.5; // Max 15dB boost
+      this.subBassNode.gain.setTargetAtTime(gain, this.audioContext.currentTime, 0.1);
   }
 
   getByteFrequencyData(array: Uint8Array) {

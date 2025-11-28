@@ -1,3 +1,4 @@
+
 export interface DeckState {
   id: 'A' | 'B';
   trackName: string | null;
@@ -10,6 +11,8 @@ export interface DeckState {
   filter: number; // -100 (Low Pass) to 100 (High Pass)
   duration: number;
   currentTime: number;
+  drive?: number;
+  subBass?: number;
 }
 
 export interface AudioEngineState {

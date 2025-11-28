@@ -5,9 +5,10 @@ interface VisualizerProps {
   deckEngine: DeckEngine;
   isPlaying: boolean;
   color: string;
+  isDarkMode?: boolean;
 }
 
-const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color }) => {
+const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color, isDarkMode = true }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
 
@@ -21,13 +22,13 @@ const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color })
     const dataArray = new Uint8Array(bufferLength);
 
     const draw = () => {
-      // Clear with transparency
+      // Clear
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       if (!isPlaying) {
          // Draw a faint center line
          ctx.beginPath();
-         ctx.strokeStyle = '#27272a';
+         ctx.strokeStyle = isDarkMode ? '#27272a' : '#d4d4d8';
          ctx.lineWidth = 1;
          ctx.moveTo(0, canvas.height / 2);
          ctx.lineTo(canvas.width, canvas.height / 2);
@@ -47,11 +48,10 @@ const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color })
         // Gradient for bars
         const gradient = ctx.createLinearGradient(0, canvas.height, 0, 0);
         gradient.addColorStop(0, color);
-        gradient.addColorStop(1, '#ffffff');
+        gradient.addColorStop(1, isDarkMode ? '#ffffff' : color); // Don't go to white in light mode if background is light, keep it colorful
 
         ctx.fillStyle = gradient;
         
-        // Draw centered bars (waveform style) or bottom up? Let's do bottom up but mirrored slightly for style
         ctx.fillRect(x, canvas.height - barHeight, barWidth - 1, barHeight);
 
         // Reflection (opacity low)
@@ -69,7 +69,7 @@ const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color })
     } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.beginPath();
-        ctx.strokeStyle = '#333';
+        ctx.strokeStyle = isDarkMode ? '#333' : '#ccc';
         ctx.moveTo(0, canvas.height / 2);
         ctx.lineTo(canvas.width, canvas.height / 2);
         ctx.stroke();
@@ -78,14 +78,14 @@ const Visualizer: React.FC<VisualizerProps> = ({ deckEngine, isPlaying, color })
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-  }, [isPlaying, deckEngine, color]);
+  }, [isPlaying, deckEngine, color, isDarkMode]);
 
   return (
     <canvas 
         ref={canvasRef} 
         width={300} 
         height={48} 
-        className="w-full h-12 rounded bg-black/40 border border-white/5"
+        className={`w-full h-12 rounded border ${isDarkMode ? 'bg-black/40 border-white/5' : 'bg-neutral-100/50 border-black/5'}`}
     />
   );
 };
