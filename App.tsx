@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import Deck from './components/Deck';
 import Mixer from './components/Mixer';
 import AIAssistant from './components/AIAssistant';
+import Recorder from './components/Recorder';
 import { DeckState } from './types';
 import { DEFAULT_DECK_STATE } from './constants';
 import { RadioTower, Zap, Moon, Sun, Sparkles } from 'lucide-react';
@@ -53,6 +55,9 @@ const App: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-4">
+             {/* Recorder Component */}
+             <Recorder isDarkMode={isDarkMode} />
+
              {/* Theme Toggle */}
              <button 
                 onClick={toggleTheme}

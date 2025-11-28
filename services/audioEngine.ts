@@ -200,11 +200,20 @@ class AudioEngine {
   public deckB: DeckEngine;
   public crossfaderGainA: GainNode;
   public crossfaderGainB: GainNode;
+  
+  // Recording Destination
+  public recordDestination: MediaStreamAudioDestinationNode;
 
   constructor() {
     this.context = new (window.AudioContext || (window as any).webkitAudioContext)();
     this.masterGain = this.context.createGain();
+    
+    // Create Recording Destination (Does not output to speakers, just holds stream)
+    this.recordDestination = this.context.createMediaStreamDestination();
+
+    // Connect Master to Speakers AND Recorder
     this.masterGain.connect(this.context.destination);
+    this.masterGain.connect(this.recordDestination);
 
     // Crossfader Routing
     this.crossfaderGainA = this.context.createGain();
@@ -234,6 +243,11 @@ class AudioEngine {
 
     this.crossfaderGainA.gain.setTargetAtTime(gainA, this.context.currentTime, 0.01);
     this.crossfaderGainB.gain.setTargetAtTime(gainB, this.context.currentTime, 0.01);
+  }
+  
+  // Get the stream for the recorder
+  getAudioStream(): MediaStream {
+      return this.recordDestination.stream;
   }
 }
 
